@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="description" content="Independent AI proof of concept by Youssef Dhouib: German customer feedback turned into approved, traceable actions. Synthetic data.">
+<style>:root{color-scheme:light}img{max-width:100%}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resolve CX Case Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell — slim product bar, tabbed workspaces; case desk is inbox | case workspace */
+:root{
+  --bg:#f6f8f9; --surface:#ffffff; --surface-2:#f0f4f5; --ink:#101c22; --muted:#55666f; --line:#e1e7ea;
+  --accent:#0b6c76; --accent-ink:#ffffff; --accent-soft:#dcefef; --blue:#1f4f8f; --blue-soft:#e2ebf7;
+  --ok:#2b7a4b; --ok-soft:#e0f1e6; --warn:#9a6210; --warn-soft:#f8ecd6; --crit:#b3352e; --crit-soft:#f8e1df;
+  --mark:#fff0b8; --shadow:0 1px 2px rgba(18,34,42,.06),0 4px 16px rgba(18,34,42,.05);
+  --f-body:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+/* Light is the default for every viewer; dark only via the header toggle (or the viewer's explicit dark choice) */
+:root[data-theme="dark"]{
+  --bg:#0c1418; --surface:#121d22; --surface-2:#182730; --ink:#e2ebee; --muted:#93a6ae; --line:#24363e;
+  --accent:#4cb2ba; --accent-ink:#06191c; --accent-soft:#12343a; --blue:#86aee6; --blue-soft:#172a42;
+  --ok:#5fc287; --ok-soft:#133022; --warn:#e3a84d; --warn-soft:#352812; --crit:#f07d73; --crit-soft:#3a1916;
+  --mark:#4a3d10; --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,select,textarea,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* product bar */
+header.bar{background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:34px;height:34px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{display:block}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.brand p{margin:0;font-size:12.5px;color:var(--muted)}
+.demo-flag{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:5px 12px;font-weight:500}
+.demo-flag i{width:7px;height:7px;border-radius:50%;background:var(--warn);display:block}
+.theme-btn{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none}
+.theme-btn:hover{color:var(--ink);border-color:var(--muted)}
+.theme-btn .moon{display:none}
+:root[data-theme="dark"] .theme-btn .sun{display:none}
+:root[data-theme="dark"] .theme-btn .moon{display:block}
+body{-webkit-font-smoothing:antialiased;letter-spacing:-.003em}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;border-top:1px solid var(--line)}
+nav.tabs .wrap{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px;padding-block:0}
+nav.tabs a{padding:11px 14px;color:var(--muted);text-decoration:none;font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs a:hover{color:var(--ink)}
+
+main{padding-block:22px 40px}
+.view[hidden]{display:none}
+
+/* generic */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 14px;min-height:38px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:background-color .15s,border-color .15s,filter .15s}
+.btn:active{filter:brightness(.94)}
+::selection{background:var(--accent-soft);color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--crit)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-new{background:var(--blue-soft);color:var(--blue)}
+.s-analyzing{background:var(--accent-soft);color:var(--accent)}
+.s-awaiting{background:var(--warn-soft);color:var(--warn)}
+.s-resolved{background:var(--ok-soft);color:var(--ok)}
+.s-escalated{background:var(--crit-soft);color:var(--crit)}
+.s-open{background:var(--blue-soft);color:var(--blue)}
+.u-high{color:var(--crit)} .u-medium{color:var(--warn)} .u-low{color:var(--ok)}
+.tag{font-size:11.5px;border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--muted);white-space:nowrap}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}
+.redact{font-family:var(--f-mono);font-size:11.5px;background:var(--surface-2);border:1px dashed var(--muted);border-radius:4px;padding:0 4px;color:var(--muted)}
+
+/* desk */
+.desk{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+.inbox{overflow:hidden}
+.inbox-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);gap:8px}
+.inbox-head h2{font-size:14px}
+.inbox ul{list-style:none;margin:0;padding:0;max-height:760px;overflow:auto}
+.inbox-filter{padding:10px 16px;border-bottom:1px solid var(--line)}
+.inbox-filter .seg{display:flex}
+.inbox-filter .seg button{flex:1}
+.inbox li button{width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:12px 16px;cursor:pointer;display:grid;gap:5px;transition:background-color .15s}
+.inbox li button:hover{background:var(--surface-2)}
+.inbox li button[aria-current="true"]{background:var(--accent-soft)}
+.inbox li button[aria-current="true"] .row1{color:var(--accent)}
+.tag.rec{border-color:var(--accent);color:var(--accent);font-weight:600}
+.inbox .empty{padding:16px}
+.row1{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.row2{font-weight:500;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px}
+.row3{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+.case{display:grid;gap:16px;min-width:0}
+.case-head{padding:18px 20px;display:grid;gap:14px}
+.case-title{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.case-title h2{font-size:18px;font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:500}
+.msg{background:var(--surface-2);border-radius:8px;padding:14px 16px;font-size:14.5px;line-height:1.6;max-width:75ch;white-space:pre-wrap}
+.msg-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:none;padding:4px 11px;min-height:30px;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--muted)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+
+/* guided demo + lifecycle */
+.guide{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 28px;align-items:center;padding:18px 20px;margin-bottom:18px}
+.guide h2{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.guide p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.guide-side{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:flex-end}
+.track{display:flex;align-items:center;gap:8px;flex-wrap:wrap;list-style:none;margin:0;padding:0}
+.track li{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--muted)}
+.track li+li::before{content:"";width:18px;height:1.5px;background:var(--line)}
+.track .n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;background:var(--surface);font-variant-numeric:tabular-nums}
+.track li.on{color:var(--ink)}
+.track li.on .n{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.track li.ok .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.track li.bad .n{background:var(--crit);border-color:var(--crit);color:var(--surface)}
+.life{padding-top:2px}
+.life li{font-size:12.5px}
+.result{display:grid;gap:12px;background:var(--surface-2);border-radius:9px;padding:12px 14px;margin:4px 0 16px}
+.result-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.result-top strong{font-size:13.5px}
+.result dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 16px;margin:0}
+.result dt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.result dd{margin:2px 0 0;font-weight:600}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);border-radius:10px;padding:8px 8px 8px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 10px 30px rgba(10,20,25,.25);z-index:50;width:max-content;max-width:calc(100% - 32px);font-weight:500;animation:rise .25s cubic-bezier(.2,.8,.2,1)}
+.toast .btn{background:transparent;color:inherit;border-color:color-mix(in srgb,var(--surface) 40%,transparent)}
+@keyframes rise{from{transform:translate(-50%,12px);opacity:0}}
+@keyframes fadein{from{opacity:.6;transform:translateY(4px)}}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+
+/* pipeline */
+.pipe{padding:4px 20px 8px;container-type:inline-size}
+.pipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 0 6px}
+.pipe-head h3{font-size:14px}
+.wsteps{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.wsteps .l{min-width:0;overflow-wrap:anywhere;line-height:1.25}
+.wsteps button{width:100%;display:flex;align-items:center;gap:8px;background:none;border:0;border-top:3px solid var(--line);padding:10px 2px 2px;cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:500;text-align:left;min-height:44px;transition:border-color .2s,color .2s}
+.wsteps button:hover:not(:disabled){color:var(--ink)}
+.wsteps button.ok{border-top-color:var(--accent);color:var(--ink)}
+.wsteps button.cur{border-top-color:var(--accent);color:var(--ink);font-weight:600}
+.wsteps button:disabled{cursor:default}
+.wsteps .n{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11.5px;background:var(--surface);font-variant-numeric:tabular-nums}
+.wsteps .ok .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.wsteps .cur .n{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.wsteps .ok.cur .n{color:var(--accent-ink)}
+.wsteps .gate.cur .n{background:var(--warn);border-color:var(--warn);color:var(--surface);box-shadow:0 0 0 3px var(--warn-soft)}
+.wk{border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:16px;margin-bottom:16px}
+.wk-count{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.02em}
+.wk-head h3{font-size:19px;font-weight:600;letter-spacing:-.01em;margin-top:2px}
+.wk-lead{margin:6px 0 0;color:var(--muted);max-width:68ch;font-size:14.5px;line-height:1.55}
+.wk-body{display:grid;gap:12px;animation:fadein .3s ease-out}
+.wk-nav{position:relative;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.wk-progress{position:absolute;left:0;top:-1px;height:2px;width:100%;background:var(--accent);transform-origin:left;transform:scaleX(0);animation:autofill linear forwards;border-radius:2px}
+@keyframes autofill{to{transform:scaleX(1)}}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+.wk-nav .sp{flex:1}
+.wk-nav .hint{margin:0}
+.wk-loading{display:flex;align-items:center;gap:10px;color:var(--muted);padding:22px 0;font-weight:500}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .7s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tech summary{cursor:pointer;font-size:12.5px;font-weight:500;color:var(--muted);width:max-content}
+.tech summary:hover{color:var(--ink)}
+.tech>div{margin-top:8px;font-size:12.5px;color:var(--muted);display:grid;gap:6px;background:var(--surface-2);border-radius:8px;padding:10px 12px}
+.tech code{font-family:var(--f-mono);font-size:12px;color:var(--ink)}
+.cite{font-size:11.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 9px}
+.start{display:grid;gap:12px;justify-items:start;padding:6px 0 18px}
+.start p{margin:0;color:var(--muted);max-width:62ch}
+/* narrow workflow panel: only the current step keeps its label */
+@container (max-width:760px){
+  .wsteps button:not(.cur) .l{display:none}
+  .wsteps{grid-template-columns:repeat(6,auto);justify-content:space-between}
+  .wsteps button{padding-inline:0}
+}
+@container (max-width:520px){ .wk{padding:16px} }
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.kv div{background:var(--surface-2);border-radius:7px;padding:8px 10px;min-width:0}
+.kv dt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.kv dd{margin:2px 0 0;font-weight:600;overflow-wrap:anywhere}
+.why{font-size:13px;color:var(--muted);max-width:80ch}
+.why b{color:var(--ink);font-weight:500}
+.conf{display:flex;align-items:center;gap:8px}
+.conf .track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:60px}
+.conf .fill{height:100%;background:var(--accent)}
+.doc{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:4px}
+.doc-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.doc-top strong{font-size:13.5px}
+.doc p{margin:0;font-size:13px;color:var(--muted)}
+.score{font-family:var(--f-mono);font-size:11.5px;color:var(--accent)}
+.actions-list{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13.5px}
+.guard{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;background:var(--blue-soft);color:var(--ink);border-radius:7px;padding:8px 10px}
+.guard svg{flex:none;margin-top:2px;color:var(--blue)}
+.approval{border:1px solid var(--warn);background:var(--warn-soft);border-radius:9px;padding:14px;display:grid;gap:10px}
+.approval textarea{width:100%;min-height:170px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:10px 12px;line-height:1.55;resize:vertical}
+.approval .ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.approval label{font-size:12.5px;font-weight:500}
+.approval select{border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:6px 8px}
+.outcome{border-radius:9px;padding:12px 14px;font-weight:500;display:flex;gap:10px;align-items:center}
+.outcome.ok{background:var(--ok-soft);color:var(--ok)}
+.outcome.esc{background:var(--crit-soft);color:var(--crit)}
+
+.audit{padding:16px 20px}
+.audit h3{font-size:14px;margin-bottom:10px}
+.audit table{width:100%;border-collapse:collapse;font-size:12.5px}
+.audit td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.audit td:first-child{font-family:var(--f-mono);color:var(--muted);white-space:nowrap;width:1%}
+.audit td:nth-child(2){white-space:nowrap;width:1%;font-weight:500}
+.tbl-scroll{overflow-x:auto}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+
+/* composer */
+.composer{padding:16px 20px;display:grid;gap:10px}
+.composer textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:10px 12px}
+.composer .ctrls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.composer select{border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:6px 8px}
+.hint{font-size:12px;color:var(--muted)}
+
+/* overview */
+.intro{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;margin-bottom:18px}
+.intro .panel{padding:20px}
+.intro h2{font-size:21px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+.intro p{margin:0 0 10px;color:var(--muted);max-width:65ch}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px;font-weight:500}
+.flow span{background:var(--surface-2);border-radius:6px;padding:4px 9px}
+.flow em{font-style:normal;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.kpi .s{font-size:12px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.chart{padding:18px 20px;min-width:0}
+.chart h3{font-size:14px;margin-bottom:2px}
+.chart .sub{font-size:12px;color:var(--muted);margin:0 0 12px}
+.hbar{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:13px;padding:5px 0}
+.hbar .t{height:12px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.hbar .f{display:block;height:100%;background:var(--accent);border-radius:3px}
+.hbar .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+svg text{fill:var(--muted);font-family:var(--f-body)}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+table.data{width:100%;border-collapse:collapse;font-size:13px}
+table.data th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.data td{padding:8px;border-bottom:1px solid var(--line)}
+table.data td.r,table.data th.r{text-align:right;font-variant-numeric:tabular-nums}
+
+/* insights */
+.ins-list{display:grid;gap:12px}
+.ins{padding:16px 20px;display:grid;gap:10px}
+.ins-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.ins h3{font-size:15px;font-weight:600}
+.delta{font-family:var(--f-mono);font-weight:500;font-size:13px;border-radius:6px;padding:2px 8px}
+.delta.up{background:var(--crit-soft);color:var(--crit)}
+.delta.down{background:var(--ok-soft);color:var(--ok)}
+.delta.flat{background:var(--surface-2);color:var(--muted)}
+.ins p{margin:0;color:var(--muted);max-width:80ch}
+.ins details summary{cursor:pointer;font-weight:500;font-size:13px;color:var(--accent)}
+.ins details ul{margin:8px 0 0;padding-left:18px;font-size:13px;display:grid;gap:4px}
+.ins .fix{font-size:13px;background:var(--accent-soft);border-radius:7px;padding:8px 12px}
+.plain-h{font-size:14px;font-weight:600;margin-bottom:4px}
+.ins .fix b{font-weight:600}
+
+/* method */
+.arch{padding:20px;overflow-x:auto}
+.arch svg{min-width:760px;width:100%;height:auto;display:block}
+.arch rect{fill:var(--surface-2);stroke:var(--line)}
+.arch rect.hl{fill:var(--accent-soft);stroke:var(--accent)}
+.arch rect.gate{fill:var(--warn-soft);stroke:var(--warn)}
+.arch .lbl{fill:var(--ink);font-size:13px;font-weight:600}
+.arch .sm{fill:var(--muted);font-size:11px}
+.arch path{stroke:var(--muted);fill:none;stroke-width:1.5}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:18px}
+.cols3 .panel{padding:18px 20px}
+.cols3 h3{font-size:14px;margin-bottom:8px}
+.cols3 ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13px;color:var(--muted)}
+.cols3 li b{color:var(--ink);font-weight:500}
+.eval{padding:18px 20px;margin-top:18px;display:grid;gap:14px}
+.eval-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.eval-head h3{font-size:14px}
+.cm td,.cm th{text-align:center;padding:5px 6px;font-size:12px;font-variant-numeric:tabular-nums;border:1px solid var(--line)}
+.cm th{font-weight:600;color:var(--muted)}
+.cm td.diag{background:var(--accent-soft);font-weight:600}
+.cm td.err{background:var(--crit-soft);color:var(--crit);font-weight:600}
+.cm{border-collapse:collapse}
+
+footer{border-top:1px solid var(--line);padding-block:18px 28px;color:var(--muted);font-size:12.5px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+footer a{color:var(--accent)}
+
+@media (max-width:980px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2,.intro,.cols3{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .desk,.guide{grid-template-columns:minmax(0,1fr)}
+  .guide-side{justify-content:flex-start}
+  .inbox ul{max-height:330px}
+  .demo-flag{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.video-link{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:0 12px;min-height:38px;background:var(--surface)}
+.video-link:hover{border-color:var(--accent)}
+</style>
+
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5 8 14.5 16 5.5" stroke="var(--accent-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h1>Resolve · Customer Experience Intelligence</h1>
+        <p>Independent AI proof of concept — synthetic demonstration data</p>
+      </div>
+    </div>
+    <div class="demo-flag" title="All AI steps run in a deterministic rule-based engine in your browser. No LLM is called."><i></i>Demo mode · deterministic engine, no live LLM</div>
+    <a class="video-link" href="resolve-demo-video.mp4" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3.5v9l7-4.5-7-4.5Z" fill="currentColor"/></svg>Watch the 2-min video</a>
+    <button class="theme-btn" id="theme-btn" type="button" aria-label="Dark theme" aria-pressed="false">
+      <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+    </button>
+  </div>
+  <nav class="tabs" aria-label="Sections"><div class="wrap">
+    <a href="#desk" data-tab="desk">Case desk</a>
+    <a href="#overview" data-tab="overview">Overview</a>
+    <a href="#insights" data-tab="insights">Management insights</a>
+    <a href="#method" data-tab="method">Architecture &amp; evaluation</a>
+  </div></nav>
+</header>
+
+<main class="wrap">
+  <section id="v-desk" class="view">
+    <div class="panel guide" id="guide"></div>
+    <div class="desk">
+      <aside class="panel inbox">
+        <div class="inbox-head"><h2>Inbox <span class="hint num" id="inbox-count"></span></h2><button class="btn" id="new-case-btn" type="button">+ New case</button></div>
+        <div class="inbox-filter" id="inbox-filter"></div>
+        <ul id="inbox"></ul>
+      </aside>
+      <div class="case" id="case"></div>
+    </div>
+  </section>
+  <section id="v-overview" class="view" hidden></section>
+  <section id="v-insights" class="view" hidden></section>
+  <section id="v-method" class="view" hidden></section>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<p id="live" class="sr" aria-live="polite"></p>
+
+<footer><div class="wrap">
+  <span>Concept and build: <b>Youssef Dhouib</b> · AI Engineering · <a href="https://github.com/youssefdhouib" target="_blank" rel="noopener">github.com/youssefdhouib</a></span>
+  <span>Not affiliated with or endorsed by any company. All customers, branches, staff and procedures are fictional.</span>
+</div></footer>
+
+<script>
+"use strict";
+const TODAY = new Date("2026-10-25T09:00:00");
+const DAY = 864e5;
+
+/* ---------- domain configuration ---------- */
+const DEPTS = {
+  branch:"Branch Operations", service:"Customer Service Center", tech:"Technical Service",
+  billing:"Billing & Health Insurance", audio:"Audiology Quality", cx:"CX Team / Branch Lead"
+};
+const CATS = {
+  appointment:{label:"Appointments & waiting time", de:"Termine & Wartezeit", dept:"branch", proc:"P-101",
+    kw:["termin","gewartet","wartezeit","stunde warten","minuten warten","verschoben","abgesagt","wartezimmer","nachkontrolle"],
+    issue:"Appointment handling failed: waiting time or missing rescheduling follow-up."},
+  reachability:{label:"Reachability & response", de:"Erreichbarkeit", dept:"service", proc:"P-102",
+    kw:["erreich","telefon","hotline","warteschleife","rückruf","zurückruf","ruft zurück","angerufen","keine antwort","e-mail","niemand geht"],
+    issue:"Customer cannot reach the branch or service team, or got no reply."},
+  repair:{label:"Repair & device service", de:"Reparatur & Gerät", dept:"tech", proc:"P-201",
+    kw:["reparatur","repariert","defekt","kaputt","leihgerät","akku","fällt","ausgefallen","garantie","lädt nicht"],
+    issue:"Device is defective or a repair is taking longer than promised."},
+  billing:{label:"Billing & insurance", de:"Abrechnung & Krankenkasse", dept:"billing", proc:"P-301",
+    kw:["rechnung","krankenkasse","zuzahlung","kosten","erstattung","kostenvoranschlag","betrag","mahnung","bezahlt","antrag"],
+    issue:"Unclear invoice, co-payment or health-insurance reimbursement."},
+  fitting:{label:"Fitting & hearing comfort", de:"Anpassung & Hörkomfort", dept:"audio", proc:"P-401",
+    kw:["anpassung","einstellung","pfeift","drückt","zu laut","zu leise","verstehe","blechern","ohrstück","höre"],
+    issue:"Hearing aid fit or sound settings do not meet the customer's needs."},
+  praise:{label:"Praise", de:"Lob", dept:"cx", proc:"P-501",
+    kw:["freundlich","kompetent","lob","danke","professionell","geduldig","toll","zufrieden","hervorragend"],
+    issue:"Positive feedback about staff or service."}
+};
+const POS = ["danke","freundlich","kompetent","zufrieden","toll","professionell","geduldig","lob","hervorragend","gut"];
+const NEG = ["leider","enttäuscht","ärgerlich","unzumutbar","frustriert","keine antwort","niemand","nie ","umsonst","beschwerde","schlecht","aufgeschmissen","kaum","nicht"];
+const URGENT = ["sofort","dringend","ohne hörgerät","seit zwei wochen","seit drei wochen","seit wochen","zum dritten mal","zum zweiten mal","aufgeschmissen","umsonst"];
+
+const KB = [
+  {id:"P-101", cat:"appointment", title:"Appointment delays and rescheduling", slaDays:2,
+   body:"If a customer waited more than 20 minutes or an appointment was cancelled or moved without notice: apologise, offer a priority slot within 5 working days, branch lead calls back within 2 working days.",
+   terms:["termin","wart","verschob","abgesagt","neuen termin","rückmeldung","priorität","filiale"],
+   actions:["Offer a priority appointment within 5 working days","Branch lead calls the customer back","Log the delay reason for weekly branch review"],
+   summary:"Apology, priority appointment within 5 working days, branch-lead call-back."},
+  {id:"P-102", cat:"reachability", title:"Contact reachability and call-backs", slaDays:1,
+   body:"Log every failed contact attempt. The Service Center calls back within 1 working day and offers a call-back time window. Check whether the branch phone line is correctly routed.",
+   terms:["erreich","telefon","hotline","warteschleife","rückruf","anruf","e-mail","antwort","niemand"],
+   actions:["Service Center calls back within 1 working day","Offer a fixed call-back time window","Check branch phone routing and unanswered e-mail queue"],
+   summary:"Call-back within 1 working day, fixed time window, routing check."},
+  {id:"P-201", cat:"repair", title:"Device repair and loaner devices", slaDays:1,
+   body:"Offer a loaner device if a repair takes longer than 5 days. Send a status update every 3 working days. Escalate to Technical Service if a repair exceeds 14 days.",
+   terms:["reparatur","defekt","kaputt","gerät","leihgerät","akku","garantie","ausgefallen","wochen"],
+   actions:["Arrange a loaner device today","Check repair status with Technical Service","Send a status update every 3 working days"],
+   summary:"Loaner device, repair status check, regular updates."},
+  {id:"P-301", cat:"billing", title:"Invoices, co-payments and health insurance", slaDays:3,
+   body:"Explain the health-insurance contribution and the statutory co-payment. The billing team reviews the invoice within 3 working days. Never confirm refund amounts before review.",
+   terms:["rechnung","krankenkasse","zuzahlung","kosten","erstattung","kostenvoranschlag","betrag","mahnung","antrag"],
+   actions:["Billing team reviews invoice and insurance approval","Send a written explanation of the co-payment","Pause payment reminders until review is complete"],
+   summary:"Billing review within 3 working days, written explanation, reminders paused."},
+  {id:"P-401", cat:"fitting", title:"Fine-tuning and fitting follow-up", slaDays:2,
+   body:"Offer a free fine-tuning appointment within 7 days. If discomfort persists after two sessions, request an audiologist review of the ear mould.",
+   terms:["anpass","einstellung","pfeift","drückt","laut","leise","versteh","höre","ohrstück"],
+   actions:["Book a free fine-tuning appointment within 7 days","Audiologist reviews fitting data before the visit","Check ear mould for pressure points"],
+   summary:"Free fine-tuning within 7 days, audiologist review."},
+  {id:"P-501", cat:"praise", title:"Positive feedback", slaDays:3,
+   body:"Thank the customer and forward the praise to the named employee and the branch lead. If the message also contains a complaint, handle that part with its own procedure.",
+   terms:["freundlich","kompetent","lob","danke","professionell","geduldig","zufrieden","team"],
+   actions:["Thank the customer","Forward the praise to the employee and branch lead"],
+   summary:"Thank the customer, forward praise to the team."},
+  {id:"P-900", cat:null, title:"Approval and data-protection policy", slaDays:0,
+   body:"AI may classify and draft. Any customer contact, goodwill gesture, refund or change to customer data requires approval by an authorised employee. Personal data is masked before analysis.",
+   terms:[], actions:[], summary:"Human approval required for every outgoing action."}
+];
+
+const DRAFTS = {
+  appointment:"vielen Dank für Ihre Nachricht. Es tut uns leid, dass Sie bei Ihrem Termin so lange warten mussten und noch keine Rückmeldung erhalten haben. Wir bieten Ihnen gern einen bevorzugten Termin innerhalb der nächsten fünf Werktage an. Die Filialleitung meldet sich bis {SLA} telefonisch bei Ihnen.",
+  reachability:"vielen Dank für Ihre Nachricht. Es tut uns leid, dass Sie uns nicht erreichen konnten. Unser Kundenservice ruft Sie bis {SLA} zurück. Gern können Sie uns auch ein Zeitfenster nennen, in dem wir Sie am besten erreichen.",
+  repair:"vielen Dank für Ihre Nachricht. Es tut uns leid, dass die Reparatur länger dauert als angekündigt. Wir klären den Status sofort mit unserem technischen Service und stellen Ihnen ein Leihgerät zur Verfügung. Ein Statusupdate erhalten Sie spätestens bis {SLA}.",
+  billing:"vielen Dank für Ihre Frage zu Ihrer Rechnung. Unser Abrechnungsteam prüft den Betrag und die Kostenübernahme durch Ihre Krankenkasse und meldet sich bis {SLA} schriftlich mit einer Erklärung bei Ihnen.",
+  fitting:"vielen Dank für Ihre Rückmeldung. Es tut uns leid, dass Sie mit der Einstellung Ihrer Hörgeräte noch nicht zufrieden sind. Wir bieten Ihnen einen kostenfreien Termin zur Feinanpassung innerhalb der nächsten sieben Tage an.",
+  praise:"herzlichen Dank für Ihr freundliches Feedback! Wir haben Ihr Lob sehr gern an das Team weitergegeben.",
+  none:"vielen Dank für Ihre Nachricht. Wir prüfen Ihr Anliegen und melden uns bis {SLA} bei Ihnen."
+};
+
+/* ---------- synthetic data ---------- */
+const BRANCHES = ["Dortmund-Mitte","Bochum","Essen-Rüttenscheid","Gelsenkirchen","Hagen","Münster"];
+const CURATED = [
+  {id:"C-1041", d:1, branch:"Dortmund-Mitte", channel:"E-mail", cust:"Helga Brandt", gold:"appointment",
+   de:"Sehr geehrte Damen und Herren,\nich hatte am Dienstag um 10 Uhr einen Termin zur Hörgeräteanpassung. Ich habe über 45 Minuten gewartet und wurde dann gebeten, einen neuen Termin zu vereinbaren. Seit einer Woche warte ich nun auf eine Rückmeldung. Das ist sehr enttäuschend.\nMit freundlichen Grüßen\nHelga Brandt, Tel. 0231 4478120",
+   en:"Dear Sir or Madam,\nI had an appointment on Tuesday at 10 am for a hearing-aid fitting. I waited more than 45 minutes and was then asked to book a new appointment. I have now been waiting a week for a reply. This is very disappointing.\nKind regards\nHelga Brandt, phone 0231 4478120"},
+  {id:"C-1042", d:0, branch:"Hagen", channel:"Phone note", cust:"Klaus Becker", gold:"reachability",
+   de:"Herr Klaus Becker meldet sich zum dritten Mal. Er erreicht die Filiale seit drei Tagen telefonisch nicht, niemand geht ans Telefon. Auf seine E-Mail an k.becker@example.de kam keine Antwort. Er bittet dringend um Rückruf unter 02331 908172.",
+   en:"Mr Klaus Becker is getting in touch for the third time. He has not been able to reach the branch by phone for three days; nobody answers. His e-mail from k.becker@example.de got no reply. He urgently asks for a call-back on 02331 908172."},
+  {id:"C-1043", d:2, branch:"Essen-Rüttenscheid", channel:"Online review", cust:"Monika Schulte", gold:"appointment",
+   de:"Frau Yilmaz war außergewöhnlich freundlich und kompetent und hat sich viel Zeit für die Beratung genommen. Leider musste ich trotz Termin fast eine Stunde warten. Die Wartezeit sollte wirklich besser geplant werden.",
+   en:"Ms Yilmaz was exceptionally friendly and competent and took a lot of time for the consultation. Unfortunately I had to wait almost an hour despite having an appointment. Waiting times really should be planned better."},
+  {id:"C-1044", d:0, branch:"Bochum", channel:"E-mail", cust:"Werner Kowalski", gold:"repair",
+   de:"Mein Hörgerät ist seit zwei Wochen zur Reparatur. Mir wurde gesagt, es dauert drei Tage. Ich habe kein Leihgerät bekommen und bin ohne Hörgerät im Alltag völlig aufgeschmissen. Bitte kümmern Sie sich sofort darum.\nWerner Kowalski, werner.k@example.de",
+   en:"My hearing aid has been in repair for two weeks. I was told it would take three days. I did not get a loaner device and I am completely lost in daily life without a hearing aid. Please take care of this immediately.\nWerner Kowalski, werner.k@example.de"},
+  {id:"C-1045", d:3, branch:"Münster", channel:"Web form", cust:"Sabine Krüger", gold:"billing",
+   de:"Ich habe eine Rechnung über eine Zuzahlung erhalten, obwohl mir gesagt wurde, dass meine Krankenkasse die Kosten vollständig übernimmt. Können Sie mir den Betrag bitte erklären? Kundennummer 58-22914.",
+   en:"I received an invoice for a co-payment although I was told my health insurance would cover the full cost. Could you please explain the amount? Customer number 58-22914."},
+  {id:"C-1046", d:1, branch:"Gelsenkirchen", channel:"E-mail", cust:"Jürgen Hoffmann", gold:"fitting",
+   de:"Seit der letzten Einstellung pfeift das rechte Gerät, und Gespräche im Restaurant verstehe ich kaum noch. Das Ohrstück drückt außerdem hinter dem Ohr. Ich hätte gern eine neue Anpassung.",
+   en:"Since the last adjustment the right device whistles, and I can hardly follow conversations in restaurants. The ear piece also presses behind my ear. I would like a new fitting."},
+  {id:"C-1047", d:2, branch:"Dortmund-Mitte", channel:"Online review", cust:"Andreas Vogel", gold:"praise",
+   de:"Ein großes Lob an das Team in Dortmund! Herr Neumann hat meinem Vater geduldig alles erklärt. Sehr professionell und freundlich, vielen Dank.",
+   en:"Big praise for the Dortmund team! Mr Neumann patiently explained everything to my father. Very professional and friendly, thank you very much."},
+  {id:"C-1048", d:4, branch:"Hagen", channel:"Web form", cust:"Ingrid Wolf", gold:"reachability",
+   de:"Ich versuche seit Montag, die Hotline zu erreichen, lande aber immer in der Warteschleife. Ein versprochener Rückruf kam nie.",
+   en:"I have been trying to reach the hotline since Monday but always end up in the queue. A promised call-back never came."},
+  {id:"C-1049", d:3, branch:"Essen-Rüttenscheid", channel:"E-mail", cust:"Peter Lange", gold:"repair",
+   de:"Der Akku meines Hörgeräts hält nur noch wenige Stunden, obwohl das Gerät erst acht Monate alt ist. Ist das ein Garantiefall?",
+   en:"The battery of my hearing aid only lasts a few hours, although the device is only eight months old. Is this covered by warranty?"},
+  {id:"C-1051", d:2, branch:"Münster", channel:"E-mail", cust:"Renate Fischer", gold:"appointment",
+   de:"Mein Termin wurde zum zweiten Mal kurzfristig abgesagt, ohne dass mich jemand informiert hat. Ich bin umsonst in die Filiale gefahren.",
+   en:"My appointment was cancelled at short notice for the second time without anyone telling me. I travelled to the branch for nothing."},
+  {id:"C-1052", d:5, branch:"Gelsenkirchen", channel:"Online review", cust:"Thomas Richter", gold:"reachability",
+   de:"Auf meine E-Mail vom 12. Oktober habe ich bis heute keine Antwort erhalten. Telefonisch ist leider auch niemand zu erreichen.",
+   en:"I have still not received a reply to my e-mail of 12 October. Unfortunately nobody can be reached by phone either."}
+];
+const POOL = {
+  appointment:["Ich musste trotz Termin 40 Minuten warten.","Mein Termin wurde verschoben, ohne dass ich informiert wurde.","Die Wartezeit in der Filiale war viel zu lang.","Für die Nachkontrolle bekomme ich erst in sechs Wochen einen Termin.","Beratung war gut, aber die Wartezeit war zu lang."],
+  reachability:["Die Filiale ist telefonisch kaum zu erreichen.","Auf meine E-Mail kam keine Antwort.","Der zugesagte Rückruf ist nie erfolgt.","Bei der Hotline hänge ich ständig in der Warteschleife.","Ich habe zweimal angerufen, niemand meldet sich."],
+  repair:["Mein Hörgerät ist seit zehn Tagen in der Reparatur.","Das Gerät ist nach der Reparatur wieder defekt.","Während der Reparatur habe ich kein Leihgerät bekommen.","Der Akku lädt nicht mehr richtig.","Das Hörgerät fällt immer wieder aus."],
+  billing:["Die Rechnung ist höher als im Kostenvoranschlag.","Mir ist unklar, warum ich eine Zuzahlung leisten muss.","Die Krankenkasse hat den Antrag noch nicht erhalten.","Ich habe eine Mahnung bekommen, obwohl ich bezahlt habe.","Die Erstattung lässt auf sich warten."],
+  fitting:["Mit den neuen Geräten höre ich alles zu laut.","Die Einstellung passt noch nicht, Sprache klingt blechern.","Das Ohrstück drückt nach einer Stunde.","Im Restaurant verstehe ich kaum etwas.","Das Gerät pfeift beim Telefonieren."],
+  praise:["Sehr freundliche und kompetente Beratung, danke!","Die Hörakustikerin war sehr geduldig.","Toller Service, ich bin sehr zufrieden.","Professionelle Hörtests und eine klare Erklärung, danke."]
+};
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+function buildCases(){
+  const rng = mulberry32(20261025);
+  const pick = arr => arr[Math.floor(rng()*arr.length)];
+  const cases = [];
+  for(let i=0;i<52;i++){
+    const week = Math.floor(rng()*8);                      // 0 = oldest of 8 weeks
+    const w = {appointment: week>=4?4.5:0.9, reachability:1.5, repair:1.3, billing:1, fitting:1, praise:1};
+    let r = rng()*Object.values(w).reduce((a,b)=>a+b,0), cat = "appointment";
+    for(const k in w){ if((r-=w[k])<=0){cat=k;break} }
+    const branch = cat==="reachability" && rng()<.55 ? "Hagen" : pick(BRANCHES);
+    const date = new Date(TODAY.getTime() - ((7-week)*7 + Math.floor(rng()*7))*DAY - DAY/2);
+    const handling = 1 + Math.floor(rng()*6) + (cat==="reachability"?3:0) + (cat==="repair"?2:0);
+    cases.push({id:"H-"+(2001+i), date, branch, channel:pick(["E-mail","Phone note","Online review","Web form"]),
+      cust:"", gold:cat, de:pick(POOL[cat]), en:null, status:"resolved", historical:true, handling, audit:[]});
+  }
+  CURATED.forEach(c=>cases.push({...c, date:new Date(TODAY.getTime()-c.d*DAY), status:"new", historical:false, audit:[
+    {t:new Date(TODAY.getTime()-c.d*DAY), actor:"system", ev:"Case received", det:c.channel+" · "+c.branch}]}));
+  return cases.sort((a,b)=>b.date-a.date);
+}
+
+/* ---------- deterministic analysis engine ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+
+function redact(text, cust){
+  const found = [];
+  let t = text;
+  const sub = (re, tag) => { t = t.replace(re, m => { found.push(tag); return `⟦${tag}⟧`; }); };
+  sub(/[\w.+-]+@[\w-]+\.[\w.]+/g, "EMAIL");
+  sub(/\b0\d{2,4}[ \/-]?\d{4,8}\b/g, "PHONE");
+  sub(/\b\d{2}-\d{5}\b/g, "CUSTOMER-ID");
+  if(cust){ cust.split(" ").filter(p=>p.length>2).forEach(p=>sub(new RegExp("\\b"+reEsc(p)+"\\b","g"),"NAME")); t = t.replace(/⟦NAME⟧ ⟦NAME⟧/g,"⟦NAME⟧"); }
+  sub(/\b(?:Frau|Herrn?)\s+[A-ZÄÖÜ][a-zäöüß]+/g, "NAME");
+  return {text:t, found};
+}
+function facts(text){
+  const out = [];
+  const re = /\b(seit|über|fast|nach|erst|zum)\s+(einer|eine|einem|zwei|drei|vier|fünf|sechs|zehn|acht|dritten|zweiten|\d+)\s+(Minuten|Stunde|Stunden|Tagen|Tage|Woche|Wochen|Monate|Monaten|Mal)\b/gi;
+  let m; while((m=re.exec(text))) out.push(m[0]);
+  return out;
+}
+function classify(text){
+  const low = text.toLowerCase();
+  const scores = {}, matched = {};
+  for(const k in CATS){
+    matched[k] = CATS[k].kw.filter(w => low.includes(w));
+    scores[k] = matched[k].length;
+  }
+  const total = Object.values(scores).reduce((a,b)=>a+b,0);
+  const ranked = Object.keys(scores).sort((a,b)=>scores[b]-scores[a]);
+  let primary = scores[ranked[0]] ? ranked[0] : null;
+  let mixed = false;
+  const complaintCats = ranked.filter(k=>k!=="praise" && scores[k]>0);
+  if(primary==="praise" && complaintCats.length){ primary = complaintCats[0]; mixed = true; }
+  else if(primary && primary!=="praise" && scores.praise>0) mixed = true;
+  const secondary = ranked.find(k=>k!==primary && scores[k]>0 && k!=="praise") || null;
+  const confidence = primary ? scores[primary] / Math.max(total - (mixed?scores.praise:0), 1) : 0;
+  const pos = POS.filter(w=>low.includes(w)).length, neg = NEG.filter(w=>low.includes(w)).length;
+  const sentiment = pos && neg ? "Mixed" : neg ? "Negative" : pos ? "Positive" : "Neutral";
+  const urgentHits = URGENT.filter(w=>low.includes(w));
+  const urgency = urgentHits.length ? "high" : primary==="praise" ? "low" : (neg>=2 || facts(text).length) ? "medium" : "low";
+  return {primary, secondary, mixed, scores, matched, confidence, sentiment, pos, neg, urgency, urgentHits};
+}
+function retrieve(text){
+  const low = text.toLowerCase();
+  const tokens = low.split(/[^a-zäöüß-]+/).filter(Boolean);
+  return KB.filter(p=>p.terms.length).map(p=>{
+    const hits = p.terms.filter(term => term.includes(" ") ? low.includes(term) : tokens.some(tok=>tok.startsWith(term)||tok.includes(term)));
+    return {p, hits, score: hits.length / Math.sqrt(p.terms.length)};
+  }).filter(r=>r.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
+}
+function addWorkingDays(d, n){ const r = new Date(d); let k=0; while(k<n){ r.setTime(r.getTime()+DAY); const wd=r.getDay(); if(wd!==0&&wd!==6) k++; } return r; }
+const fmtDate = d => d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+const fmtShort = d => d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+const fmtTime = d => d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+
+function analyze(c){
+  const red = redact(c.de, c.cust);
+  const cls = classify(red.text);
+  const docs = retrieve(red.text);
+  const cat = cls.primary;
+  const proc = cat ? KB.find(p=>p.id===CATS[cat].proc) : null;
+  const sla = addWorkingDays(TODAY, proc ? Math.max(proc.slaDays,1) : 2);
+  let body = (DRAFTS[cat] || DRAFTS.none).replace("{SLA}", fmtDate(sla));
+  if(cls.mixed && cat!=="praise") body += " Ihr Lob an unser Team haben wir außerdem gern weitergegeben.";
+  const draft = "Guten Tag ⟦ANREDE⟧,\n\n" + body + "\n\nMit freundlichen Grüßen\nIhr Kundenservice-Team";
+  const actions = proc ? [...proc.actions] : ["Manual triage by CX team"];
+  if(cls.mixed && cat!=="praise") actions.push("Forward the praise in this message to the employee and branch lead");
+  const dept = cat ? CATS[cat].dept : "cx";
+  const priority = cls.urgency==="high" ? "P1 · same day" : cls.urgency==="medium" ? "P2 · within SLA" : "P3 · standard";
+  const lowConf = cls.confidence < .6 || !cat;
+  return {red, cls, docs, proc, sla, draft, actions, dept, priority, lowConf, facts:facts(c.de)};
+}
+
+/* ---------- state ---------- */
+const GUIDED = "C-1043";
+const state = { cases: buildCases(), sel:GUIDED, lang:"de", filter:"all", timers:{}, auto: !matchMedia("(prefers-reduced-motion: reduce)").matches };
+const CHECK = `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const isDone = c => c.status==="resolved" || c.status==="escalated";
+function say(msg){ document.getElementById("live").textContent = msg; }
+function toast(msg, action){
+  const t = document.getElementById("toast");
+  t.innerHTML = `<span>${esc(msg)}</span>${action?`<button class="btn" type="button" data-act="${action.act}">${esc(action.label)}</button>`:""}`;
+  t.hidden = false; clearTimeout(state.toastT); state.toastT = setTimeout(()=>{ t.hidden = true; }, 7000);
+}
+function trackHTML(items, cls){
+  return `<ol class="track ${cls||""}">${items.map((it,i)=>`<li class="${it.s}"${it.s==="on"?' aria-current="step"':""}><span class="n">${it.s==="ok"?CHECK:i+1}</span>${esc(it.label)}</li>`).join("")}</ol>`;
+}
+const byId = id => state.cases.find(c=>c.id===id);
+const STATUS_LABEL = {new:"New", analyzing:"Analyzing", awaiting:"Awaiting approval", resolved:"Resolved", escalated:"Escalated"};
+const STEPS = [
+  {key:"intake", short:"Hide data", title:"Hide personal data", node:"mask_pii", busy:"Hiding personal data…",
+   lead:"Before the AI reads anything, names, phone numbers, e-mail addresses and customer numbers are hidden. Only the masked text moves on to the next steps."},
+  {key:"classify", short:"Understand", title:"Understand the message", node:"classify_feedback", busy:"Reading the message…",
+   lead:"The AI works out what the message is about, how the customer feels and how urgent it is, and shows which words led to that decision."},
+  {key:"retrieve", short:"Find procedure", title:"Find the right procedure", node:"retrieve_procedures", busy:"Searching the procedure library…",
+   lead:"It looks up the company procedure that fits this case, so the answer follows agreed rules instead of being made up."},
+  {key:"recommend", short:"Recommend", title:"Recommend next actions", node:"draft_resolution", busy:"Drafting a recommendation…",
+   lead:"Based on that procedure, it proposes concrete next actions and drafts a reply in German. It cannot send or change anything by itself."},
+  {key:"route", short:"Assign team", title:"Send to the right team", node:"route_case", busy:"Assigning the case…",
+   lead:"The case goes to the team that owns this kind of problem, with a priority and a deadline taken from the procedure."},
+  {key:"approve", short:"Decide", title:"Your decision", node:"interrupt · human_review", busy:"Preparing your decision…",
+   lead:"Nothing reaches the customer without a person. Check the draft, edit it or change the team if needed, then decide."}
+];
+function log(c, actor, ev, det){ c.audit.push({t:new Date(), actor, ev, det:det||""}); }
+
+/* ---------- rendering: desk ---------- */
+function renderGuide(){
+  const c = byId(state.sel);
+  const s1 = c ? "ok" : "on";
+  const s2 = !c ? "" : c.status==="analyzing" ? "on" : c.analysis ? "ok" : "on";
+  const s3 = !c || !c.analysis || c.status==="analyzing" ? "" : isDone(c) ? "ok" : "on";
+  const g = byId(GUIDED);
+  const label = g.status==="new" ? "Open sample case" : "Open next case";
+  document.getElementById("guide").innerHTML = `
+    <div>
+      <h2>Watch a German complaint become a resolved, audited case</h2>
+      <p>The AI prepares the work: it masks personal data, classifies the message, finds the right procedure and drafts a reply. A person approves before anything is sent.</p>
+    </div>
+    <div class="guide-side">
+      ${trackHTML([{label:"Pick a case",s:s1},{label:"Run AI analysis",s:s2},{label:"Approve the action",s:s3}])}
+      <button class="btn primary" type="button" data-act="${g.status==="new"?"guided":"next-case"}">${label}</button>
+    </div>`;
+}
+
+function renderInbox(){
+  const open = state.cases.filter(c=>!c.historical);
+  const todo = open.filter(c=>!isDone(c)), done = open.filter(isDone);
+  document.getElementById("inbox-count").textContent = `· ${todo.length} open`;
+  document.getElementById("inbox-filter").innerHTML = `<span class="seg" role="group" aria-label="Filter cases">${[["all","All",open.length],["todo","To do",todo.length],["done","Done",done.length]].map(([k,l,n])=>`<button type="button" data-filter="${k}" aria-pressed="${state.filter===k}">${l} <span class="num">${n}</span></button>`).join("")}</span>`;
+  const list = state.filter==="todo" ? todo : state.filter==="done" ? done : open;
+  if(!list.length){ document.getElementById("inbox").innerHTML = `<li class="empty">${state.filter==="done"?"No cases handled yet. Approve or escalate a case and it appears here.":"Every case is handled. Add your own with New case."}</li>`; return; }
+  document.getElementById("inbox").innerHTML = list.map(c=>{
+    const seen = c.analysis && c.reached>=1;
+    const u = seen ? c.analysis.cls.urgency : null;
+    const cat = seen && c.analysis.cls.primary ? CATS[c.analysis.cls.primary].label : null;
+    return `<li><button type="button" data-case="${c.id}" aria-current="${c.id===state.sel}">
+      <div class="row1"><span class="mono">${c.id} · ${esc(c.branch)}</span><span>${fmtShort(c.date)}</span></div>
+      <div class="row2">${esc(c.de.split("\n").find(l=>l.length>30) || c.de)}</div>
+      <div class="row3"><span class="pill s-${c.status}">${STATUS_LABEL[c.status]}</span>${c.id===GUIDED&&c.status==="new"?`<span class="tag rec">Start here</span>`:""}${cat?`<span class="tag">${esc(cat)}</span>`:""}${u?`<span class="tag u-${u}">${u} urgency</span>`:""}</div>
+    </button></li>`;
+  }).join("");
+}
+
+function highlight(text, words){
+  let h = esc(text);
+  h = h.replace(/⟦([A-Z-]+)⟧/g, '<span class="redact">$1</span>');
+  if(words.length){
+    const re = new RegExp("(" + words.sort((a,b)=>b.length-a.length).map(w=>reEsc(esc(w))).join("|") + ")", "gi");
+    h = h.split(/(<[^>]+>)/).map(part => part.startsWith("<") ? part : part.replace(re, "<mark>$1</mark>")).join("");
+  }
+  return h;
+}
+
+const PII_LABEL = {NAME:"name", PHONE:"phone number", EMAIL:"e-mail address", "CUSTOMER-ID":"customer number"};
+function confInfo(cls){
+  const n = cls.primary ? cls.scores[cls.primary] : 0;
+  const total = Object.entries(cls.scores).reduce((s,[k,v])=>s+(k==="praise"&&cls.mixed?0:v),0);
+  const lvl = !n ? "Low" : cls.confidence>=.75 ? "High" : cls.confidence>=.5 ? "Medium" : "Low";
+  return {lvl, n, total};
+}
+const cap = s => s[0].toUpperCase()+s.slice(1);
+const marks = ws => ws.map(w=>`<mark>${esc(w)}</mark>`).join(" ");
+
+// returns the plain-language result and the technical detail for one workflow step
+function stepView(key, c){
+  const a = c.analysis, cls = a.cls;
+  if(key==="intake"){
+    const counts = a.red.found.reduce((m,k)=>(m[k]=(m[k]||0)+1,m),{});
+    const list = Object.entries(counts).map(([k,n])=>`${n} ${PII_LABEL[k]}${n>1?"s":""}`).join(", ");
+    return {
+      body:`<p class="why">${list?`Hidden in this message: <b>${list}</b>.`:`<b>No personal data found</b> in this message.`} This is the text the AI works with:</p>
+        <div class="msg" style="font-size:14px">${highlight(a.red.text, [])}</div>`,
+      tech:`<p style="margin:0">Node <code>mask_pii</code>. Pattern rules for e-mail addresses, German phone numbers, customer numbers, salutation plus surname, and the name on the customer record. In production this runs before any model call.</p>`};
+  }
+  if(key==="classify"){
+    const cat = cls.primary ? CATS[cls.primary] : null, ci = confInfo(cls);
+    const matched = cls.primary ? cls.matched[cls.primary] : [];
+    return {
+      body:`<dl class="kv">
+          <div><dt>Topic</dt><dd>${cat?esc(cat.label):"Unclear"}</dd></div>
+          <div><dt>Customer mood</dt><dd>${cls.sentiment}</dd></div>
+          <div><dt>Urgency</dt><dd class="u-${cls.urgency}">${cap(cls.urgency)}</dd></div>
+          <div><dt>Certainty</dt><dd>${ci.lvl} <span class="hint" style="font-weight:400">· ${ci.n} of ${ci.total} signals</span></dd></div>
+        </dl>
+        <p class="why">${matched.length?`Words like ${marks(matched)} point to <b>${esc(cat.label)}</b>.`:"No known pattern matched, so a person should sort this case."}${a.facts.length?` Facts found: <b>${a.facts.map(esc).join(" · ")}</b>.`:""}</p>
+        ${cls.mixed?`<p class="why">The message also contains praise (${marks(cls.matched.praise)}). The complaint is handled first and the praise is passed on to the team.</p>`:""}
+        ${cls.urgentHits.length?`<p class="why">Urgency is high because of ${marks(cls.urgentHits)}.</p>`:""}
+        ${a.lowConf?`<div class="guard"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.5v4.2M8 11v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><b>Low certainty.</b> The reviewer should check the topic before approving.</span></div>`:""}`,
+      tech:`<p style="margin:0">Node <code>classify_feedback</code>. Signal counts: ${Object.entries(cls.scores).filter(([,v])=>v).map(([k,v])=>`${esc(CATS[k].label)} ${v}`).join(" · ")||"none"}. Certainty ratio ${Math.round(cls.confidence*100)}%. In production an LLM returns this as a Pydantic-validated object, with these rules as fallback.</p>`};
+  }
+  if(key==="retrieve"){
+    if(!a.docs.length) return {body:`<p class="empty">No procedure matched. The case goes to a person for manual sorting.</p>`, tech:""};
+    const top = a.docs[0].p, max = a.docs[0].score;
+    return {
+      body:`<div class="doc">
+          <div class="doc-top"><strong>${top.id} · ${esc(top.title)}</strong><span class="cite">Used for this case</span></div>
+          <p>${esc(top.body)}</p>
+        </div>
+        <p class="why">Always applied as well: <b>P-900 · ${esc(KB[6].title)}</b>. A person must approve every action that leaves the company.</p>`,
+      tech:`<p style="margin:0">Node <code>retrieve_procedures</code>. Ranking over ${KB.length-1} fictional procedures:</p>
+        ${a.docs.map(r=>`<p style="margin:0"><code>${r.p.id}</code> relevance ${(r.score/max).toFixed(2)} · matched ${r.hits.map(esc).join(", ")}</p>`).join("")}
+        <p style="margin:0">In production: embedding search over approved documents, with citations stored in the audit log.</p>`};
+  }
+  if(key==="recommend"){
+    return {
+      body:`<ol class="actions-list">${a.actions.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+        <div class="guard"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5 13.5 4v4c0 3.2-2.4 5.6-5.5 6.5C4.9 13.6 2.5 11.2 2.5 8V4L8 1.5Z" stroke="currentColor" stroke-width="1.5"/></svg><span>These are suggestions. The AI cannot contact the customer, promise refunds or change customer data.</span></div>`,
+      tech:`<p style="margin:0">Node <code>draft_resolution</code>. Actions and reply template come from ${a.proc?a.proc.id:"manual triage"}. The salutation stays a placeholder until after approval, so the model never sees the customer's name.</p>`};
+  }
+  if(key==="route"){
+    return {
+      body:`<dl class="kv">
+          <div><dt>Team</dt><dd>${esc(DEPTS[a.dept])}</dd></div>
+          <div><dt>Priority</dt><dd class="u-${cls.urgency}">${a.priority}</dd></div>
+          <div><dt>Respond by</dt><dd class="num">${fmtDate(a.sla)}</dd></div>
+          <div><dt>Branch</dt><dd>${esc(c.branch)}</dd></div>
+        </dl>`,
+      tech:`<p style="margin:0">Node <code>route_case</code>. Team from the topic, priority from the urgency rules, deadline = ${a.proc?a.proc.slaDays:2} working day(s) from ${a.proc?a.proc.id:"the default rule"}.</p>`};
+  }
+  // approve
+  const summary = `<div class="result"><dl>
+      <div><dt>Topic</dt><dd>${cls.primary?esc(CATS[cls.primary].label):"Unclear"}</dd></div>
+      <div><dt>Urgency</dt><dd class="u-${cls.urgency}">${cap(cls.urgency)}</dd></div>
+      <div><dt>Team</dt><dd>${esc(DEPTS[a.dept])}</dd></div>
+      <div><dt>Respond by</dt><dd class="num">${fmtDate(a.sla)}</dd></div>
+    </dl></div>`;
+  let body;
+  if(c.status==="resolved") body = `<div class="outcome ok">${CHECK} Approved. The reply is queued and ${a.actions.length} actions are recorded in the audit trail below.</div>${summary}`;
+  else if(c.status==="escalated") body = `<div class="outcome esc">Escalated to the team lead for manual handling.</div>${summary}`;
+  else body = `${summary}<div class="approval" id="approval-${c.id}">
+      <label for="draft-${c.id}">Draft reply to the customer (German). You can edit it.</label>
+      <textarea id="draft-${c.id}">${esc(a.draft)}</textarea>
+      <div class="ctrls">
+        <label for="dept-${c.id}">Team</label>
+        <select id="dept-${c.id}">${Object.entries(DEPTS).map(([k,v])=>`<option value="${k}" ${k===a.dept?"selected":""}>${esc(v)}</option>`).join("")}</select>
+      </div>
+      <div class="ctrls">
+        <button class="btn primary" type="button" data-act="approve">Approve and send</button>
+        <button class="btn" type="button" data-act="escalate">Escalate to team lead</button>
+        <button class="btn danger" type="button" data-act="reject">Reject</button>
+      </div>
+    </div>`;
+  return {body, tech:`<p style="margin:0">Node <code>interrupt · human_review</code>. The LangGraph run pauses here and is stored by a checkpointer. The backend refuses any outgoing action without an approval record. ⟦ANREDE⟧ is filled from the customer record after approval.</p>`};
+}
+
+function walkHTML(c){
+  const cur = c.step, s = STEPS[cur];
+  const done = i => i < c.reached || (i===STEPS.length-1 && isDone(c));
+  const stepper = `<ol class="wsteps" aria-label="Workflow steps">${STEPS.map((st,i)=>`<li><button type="button" data-step="${i}" class="${done(i)?"ok":""} ${i===cur?"cur":""} ${i===STEPS.length-1&&c.status==="awaiting"?"gate":""}" ${i>c.reached?"disabled":""} ${i===cur?'aria-current="step"':""} title="${esc(st.title)}"><span class="n">${done(i)?CHECK:i+1}</span><span class="l">${esc(st.short)}</span></button></li>`).join("")}</ol>`;
+  const v = c.loading ? null : stepView(s.key, c);
+  const next = STEPS[cur+1];
+  const autoOn = autoEligible(c);
+  const canAuto = !autoOn && c.status==="analyzing" && c.step===c.reached && next && !c.loading;
+  const nextCase = state.cases.some(x=>!x.historical && x.status==="new");
+  const finished = !next && isDone(c) ? (nextCase
+      ? `<a class="btn" href="#overview">See the overview</a><button class="btn primary" type="button" data-act="next-case">Next case <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
+      : `<span class="hint">All sample cases handled.</span><a class="btn primary" href="#overview">See the overview</a>`) : "";
+  const nav = `<div class="wk-nav">
+      ${autoOn?`<span class="wk-progress" style="animation-duration:${AUTO_MS}ms" aria-hidden="true"></span>`:""}
+      ${cur>0?`<button class="btn" type="button" data-step="${cur-1}">Back</button>`:""}
+      <span class="sp"></span>
+      ${autoOn?`<span class="hint">Continues automatically</span><button class="btn ghost" type="button" data-act="auto-off">Pause</button>`:""}
+      ${canAuto?`<button class="btn ghost" type="button" data-act="auto-on">Auto-play</button>`:""}
+      ${finished}
+      ${next?`<button class="btn ${cur+1>c.reached?"primary":""}" type="button" data-step="${cur+1}" ${c.loading?"disabled":""}>Next: ${esc(next.short)} <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:""}
+    </div>`;
+  return `${stepper}
+    <section class="wk" aria-labelledby="wk-title">
+      <div class="wk-head"><span class="wk-count">Step ${cur+1} of ${STEPS.length}</span><h3 id="wk-title">${esc(s.title)}</h3><p class="wk-lead">${esc(s.lead)}</p></div>
+      ${c.loading ? `<div class="wk-loading"><span class="spin" aria-hidden="true"></span>${esc(s.busy)}</div>`
+        : `<div class="wk-body">${v.body}</div>${v.tech?`<details class="tech" ${state.techOpen?"open":""}><summary>Technical details</summary><div>${v.tech}</div></details>`:""}`}
+      ${nav}
+    </section>`;
+}
+
+const AUTO_MS = 9000;
+const autoEligible = c => state.auto && c.analysis && c.status==="analyzing" && c.step===c.reached && c.step<STEPS.length-1 && !c.loading;
+function scheduleAuto(c){
+  clearTimeout(state.autoT);
+  if(c && autoEligible(c)) state.autoT = setTimeout(()=>{ if(state.sel===c.id && currentTab()==="desk" && autoEligible(c)) goStep(c, c.step+1); }, AUTO_MS);
+}
+function renderCase(){
+  clearTimeout(state.autoT);
+  const host = document.getElementById("case");
+  if(state.sel==="__new"){ host.innerHTML = composerHTML(); return; }
+  const c = byId(state.sel);
+  if(!c){ host.innerHTML = `<div class="panel case-head"><p class="empty">Select a case from the inbox.</p></div>`; return; }
+  const a = c.analysis;
+  const words = a && c.reached>=1 ? (a.cls.primary ? a.cls.matched[a.cls.primary] : []).concat(a.cls.mixed ? a.cls.matched.praise : []) : [];
+  const txt = state.lang==="de" ? c.de : (c.en || "No translation for this message.");
+  const order = {new:0, analyzing:1, awaiting:2, resolved:4, escalated:4}[c.status];
+  const life = ["Received","AI analysis","Human review", c.status==="escalated"?"Escalated":"Resolved"].map((label,i)=>({label, s: i<order ? "ok" : i===order ? "on" : ""}));
+  if(c.status==="escalated") life[3].s = "bad";
+  host.innerHTML = `
+    <div class="panel case-head">
+      <div class="case-title">
+        <h2><span class="mono" style="font-weight:500">${c.id}</span> · ${esc(c.channel)}</h2>
+        <span class="pill s-${c.status}">${STATUS_LABEL[c.status]}</span>
+      </div>
+      ${trackHTML(life, "life")}
+      <div class="meta"><span>Branch <b>${esc(c.branch)}</b></span><span>Received <b class="num">${fmtDate(c.date)}</b></span><span>Customer <b>fictional (demo data)</b></span></div>
+      <div class="msg-tools">
+        <span class="seg" role="group" aria-label="Message language"><button type="button" data-lang="de" aria-pressed="${state.lang==="de"}">Original (German)</button><button type="button" data-lang="en" aria-pressed="${state.lang==="en"}" ${c.en?"":"disabled"}>English</button></span>
+        ${words.length && state.lang==="de" ? `<span class="hint">Highlighted: words that decided the topic</span>`:""}
+      </div>
+      <div class="msg" lang="${state.lang}">${state.lang==="de" ? highlight(txt, words) : esc(txt)}</div>
+    </div>
+    <div class="panel pipe">
+      <div class="pipe-head">
+        <h3>How the AI handles this case</h3>
+        ${a && !isDone(c) ? `<button class="btn" type="button" data-act="run">Start over</button>` : ""}
+      </div>
+      ${a ? walkHTML(c) : `<div class="start">
+          <p>The AI works through six steps. You move through them yourself and see what happens at each one, from hiding personal data to your final decision.</p>
+          <button class="btn primary" type="button" data-act="run">Run AI analysis</button>
+        </div>`}
+    </div>
+    <div class="panel audit">
+      <h3>Audit trail</h3>
+      <div class="tbl-scroll"><table><tbody>${c.audit.slice().reverse().map(e=>`<tr><td>${fmtShort(e.t)} ${fmtTime(e.t)}</td><td>${esc(e.actor)}</td><td>${esc(e.ev)}${e.det?` <span class="hint">— ${esc(e.det)}</span>`:""}</td></tr>`).join("")}</tbody></table></div>
+    </div>`;
+  scheduleAuto(c);
+}
+
+function composerHTML(){
+  return `<div class="panel composer">
+    <h2 style="font-size:17px">New case</h2>
+    <p class="hint" style="margin:0">Write or paste a German customer message. Use fictional details only.</p>
+    <label for="nc-text" class="eyebrow">Message</label>
+    <textarea id="nc-text">Guten Tag, ich warte seit drei Wochen auf mein Hörgerät aus der Reparatur. Niemand ruft zurück. Bitte melden Sie sich dringend.</textarea>
+    <div class="ctrls">
+      <label for="nc-branch">Branch</label><select id="nc-branch">${BRANCHES.map(b=>`<option>${b}</option>`).join("")}</select>
+      <label for="nc-channel">Channel</label><select id="nc-channel"><option>E-mail</option><option>Phone note</option><option>Web form</option><option>Online review</option></select>
+    </div>
+    <div class="ctrls"><button class="btn primary" type="button" data-act="create">Create and analyze</button><button class="btn" type="button" data-act="cancel-new">Cancel</button></div>
+    <p class="hint" id="nc-err" role="alert" style="margin:0;color:var(--crit)"></p>
+  </div>`;
+}
+
+function logStep(c, i){
+  const a = c.analysis, k = STEPS[i].key;
+  if(k==="intake") log(c,"ai-engine","Personal data masked", a.red.found.length+" item(s)");
+  if(k==="classify") log(c,"ai-engine","Classified", (a.cls.primary?CATS[a.cls.primary].label:"Unclear")+" · "+a.cls.urgency+" urgency · "+confInfo(a.cls).lvl.toLowerCase()+" certainty");
+  if(k==="retrieve") log(c,"ai-engine","Procedure retrieved", a.docs.map(d=>d.p.id).join(", ")||"none");
+  if(k==="recommend") log(c,"ai-engine","Resolution drafted", a.proc?a.proc.id:"manual triage");
+  if(k==="route") log(c,"ai-engine","Routed", DEPTS[a.dept]+" · "+a.priority);
+  if(k==="approve"){ c.status = "awaiting"; log(c,"workflow","Paused for human approval"); }
+}
+// moves the walkthrough; a step not seen before "runs" briefly so the visitor sees work happen
+function goStep(c, i){
+  if(!c || !c.analysis || c.loading || i<0 || i>=STEPS.length || i>c.reached+1) return;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  c.step = i;
+  if(i===c.reached+1){
+    c.reached = i;
+    logStep(c, i);
+    if(!reduced){
+      c.loading = true; renderAll();
+      clearTimeout(state.timers[c.id]);
+      state.timers[c.id] = setTimeout(()=>{ c.loading = false; renderAll(); say(STEPS[i].title+" ready"); }, 700);
+      return;
+    }
+  }
+  renderAll(); say(STEPS[i].title);
+}
+function runAnalysis(c){
+  clearTimeout(state.timers[c.id]);
+  c.analysis = analyze(c);
+  c.status = "analyzing"; c.step = 0; c.reached = -1; c.loading = false;
+  log(c, "workflow", "Analysis started", "deterministic demo engine");
+  goStep(c, 0);
+}
+
+function decide(c, act){
+  const a = c.analysis;
+  const draftEl = document.getElementById("draft-"+c.id), deptEl = document.getElementById("dept-"+c.id);
+  if(deptEl && deptEl.value!==a.dept){ log(c,"reviewer","Routing overridden", DEPTS[a.dept]+" → "+DEPTS[deptEl.value]); a.dept = deptEl.value; a.override = true; }
+  if(draftEl && draftEl.value.trim()!==a.draft.trim()){ log(c,"reviewer","Draft edited", Math.abs(draftEl.value.length-a.draft.length)+" characters changed"); a.draft = draftEl.value; a.edited = true; }
+  if(act==="approve"){
+    log(c,"reviewer","Recommendation approved", a.proc?a.proc.id:"manual");
+    log(c,"backend","Reply queued for sending", "salutation filled from customer record");
+    a.actions.forEach(x=>log(c,"backend","Action recorded", x));
+    c.status = "resolved"; c.handling = 0;
+    log(c,"workflow","Case resolved");
+  } else if(act==="escalate"){
+    log(c,"reviewer","Escalated to team lead"); c.status = "escalated";
+  } else if(act==="reject"){
+    log(c,"reviewer","Recommendation rejected","returned to queue for manual triage");
+    c.status = "new"; c.analysis = null; c.step = 0; c.reached = -1;
+  }
+  renderAll();
+  const next = state.cases.some(x=>!x.historical && x.status==="new") ? {act:"next-case", label:"Next case"} : null;
+  if(act==="approve") toast(`${c.id} resolved. ${a.actions.length} actions recorded in the audit trail.`, next);
+  if(act==="escalate") toast(`${c.id} escalated to the team lead.`, next);
+  if(act==="reject") toast(`${c.id} returned to the queue for manual triage.`);
+  document.querySelector("#case .case-head")?.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+}
+function openNext(){
+  const n = state.cases.find(x=>!x.historical && x.status==="new");
+  if(!n){ toast("Every case is handled. Add your own with New case."); return; }
+  state.sel = n.id; state.lang = "de"; renderAll();
+}
+
+/* ---------- overview ---------- */
+function weekIndex(d){ const diff = Math.floor((TODAY - d)/DAY); return 7 - Math.min(7, Math.floor(diff/7)); }
+function labelFor(c){ return c.analysis && c.analysis.cls.primary ? c.analysis.cls.primary : c.gold; }
+function isOpen(c){ return c.status!=="resolved"; }
+
+function renderOverview(){
+  const cs = state.cases;
+  const open = cs.filter(isOpen), resolved = cs.filter(c=>!isOpen(c));
+  const urgentOpen = open.filter(c=>classify(redact(c.de,c.cust).text).urgency==="high");
+  const hist = cs.filter(c=>c.historical && c.handling!=null);
+  const avgH = hist.reduce((s,c)=>s+c.handling,0)/hist.length;
+  const counts = {}; cs.forEach(c=>{const k=labelFor(c); counts[k]=(counts[k]||0)+1});
+  const maxC = Math.max(...Object.values(counts));
+  const weeks = Array.from({length:8},()=>({all:0,appt:0}));
+  cs.forEach(c=>{const w=weekIndex(c.date); weeks[w].all++; if(labelFor(c)==="appointment") weeks[w].appt++;});
+  const W=520,H=210,P={l:34,r:12,t:12,b:28}, ymax = Math.max(...weeks.map(w=>w.all)) ;
+  const yTop = Math.ceil(ymax/4)*4, x = i => P.l + i*(W-P.l-P.r)/7, y = v => H-P.b - v*(H-P.t-P.b)/yTop;
+  const line = key => weeks.map((w,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(w[key]).toFixed(1)}`).join(" ");
+  const ticks = [0,yTop/4,yTop/2,3*yTop/4,yTop];
+  const wkLabel = i => { const end = new Date(TODAY.getTime() - (7-i)*7*DAY); return fmtShort(end); };
+  const area = `${line("all")} L${x(7)},${y(0)} L${x(0)},${y(0)} Z`;
+  const branchRows = BRANCHES.map(b=>{
+    const bc = cs.filter(c=>c.branch===b); const bo = bc.filter(isOpen).length;
+    const tc = {}; bc.forEach(c=>{const k=labelFor(c); if(k!=="praise") tc[k]=(tc[k]||0)+1});
+    const top = Object.keys(tc).sort((p,q)=>tc[q]-tc[p])[0];
+    return {b, n:bc.length, o:bo, top: top?CATS[top].label:"—"};
+  }).sort((p,q)=>q.n-p.n);
+
+  document.getElementById("v-overview").innerHTML = `
+    <div class="intro">
+      <div class="panel">
+        <h2>From free-text feedback to traceable action</h2>
+        <p>Hearing-care customers write in German, by e-mail, phone and reviews. Each message needs the right team, the right procedure and a timely, documented answer. This prototype shows how an AI workflow can prepare that work while a person stays in charge of every outgoing action.</p>
+        <div class="flow"><span>Message</span><em>→</em><span>Mask personal data</span><em>→</em><span>Classify</span><em>→</em><span>Retrieve procedure</span><em>→</em><span>Draft &amp; route</span><em>→</em><span>Human approval</span><em>→</em><span>Audit trail</span></div>
+      </div>
+      <div class="panel">
+        <h2 style="font-size:17px">Try it in 60 seconds</h2>
+        <ol class="actions-list" style="margin-top:8px">
+          <li>Open the <a href="#desk" style="color:var(--accent)">Case desk</a> and pick case C-1043, marked <b>Start here</b>.</li>
+          <li>Press <b>Run AI analysis</b> and follow the six workflow steps.</li>
+          <li>Edit the German draft or change the routing, then approve.</li>
+          <li>Check the audit trail, then come back here: the numbers update.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="panel kpi"><div class="eyebrow">Feedback received</div><div class="v">${cs.length}</div><div class="s">last 8 weeks · synthetic</div></div>
+      <div class="panel kpi"><div class="eyebrow">Open cases</div><div class="v">${open.length}</div><div class="s">${open.filter(c=>c.status==="awaiting").length} awaiting approval</div></div>
+      <div class="panel kpi"><div class="eyebrow">Resolved</div><div class="v">${resolved.length}</div><div class="s">${Math.round(resolved.length/cs.length*100)}% of all cases</div></div>
+      <div class="panel kpi"><div class="eyebrow">Urgent &amp; open</div><div class="v u-high">${urgentOpen.length}</div><div class="s">flagged by urgency rules</div></div>
+      <div class="panel kpi"><div class="eyebrow">Avg. handling time</div><div class="v">${avgH.toFixed(1)} d</div><div class="s">simulated, resolved history</div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel chart">
+        <h3>Weekly feedback volume</h3>
+        <p class="sub">All categories vs. appointment-related, by week ending. Hover a week for exact values.</p>
+        <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Weekly feedback volume line chart">
+          ${ticks.map(t=>`<line x1="${P.l}" x2="${W-P.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${P.l-8}" y="${y(t)+4}" text-anchor="end" font-size="11">${t}</text>`).join("")}
+          ${weeks.map((w,i)=> i%2===1||i===7 ? `<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11">${wkLabel(i)}</text>`:"").join("")}
+          <path d="${area}" fill="var(--accent-soft)" stroke="none"/>
+          <path d="${line("all")}" stroke="var(--accent)" stroke-width="2.2" fill="none"/>
+          <path d="${line("appt")}" stroke="var(--crit)" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+          ${weeks.map((w,i)=>`<g><title>Week ending ${wkLabel(i)}: ${w.all} feedback, ${w.appt} appointment-related</title>
+            <rect x="${x(i)-14}" y="${P.t}" width="28" height="${H-P.t-P.b}" fill="transparent"/>
+            <circle cx="${x(i)}" cy="${y(w.all)}" r="${i===7?4.5:3}" fill="var(--accent)"/>
+            <circle cx="${x(i)}" cy="${y(w.appt)}" r="${i===7?4:2.5}" fill="var(--crit)"/></g>`).join("")}
+          <text x="${x(7)-8}" y="${y(weeks[7].all)-9}" text-anchor="end" font-size="12" font-weight="600" style="fill:var(--accent)">${weeks[7].all}</text>
+          <text x="${x(7)-8}" y="${y(weeks[7].appt)+16}" text-anchor="end" font-size="12" font-weight="600" style="fill:var(--crit)">${weeks[7].appt}</text>
+        </svg>
+        <div class="legend"><span><i style="background:var(--accent)"></i>All feedback</span><span><i style="background:var(--crit)"></i>Appointments &amp; waiting time</span></div>
+      </div>
+      <div class="panel chart">
+        <h3>Feedback by category</h3>
+        <p class="sub">Open cases use the engine's label once analysed; history uses its triage label</p>
+        ${Object.keys(CATS).sort((p,q)=>(counts[q]||0)-(counts[p]||0)).map(k=>`<div class="hbar"><span>${esc(CATS[k].label)}</span><span class="t"><span class="f" style="width:${((counts[k]||0)/maxC*100).toFixed(1)}%;${k==="praise"?"background:var(--ok)":""}"></span></span><span class="n">${counts[k]||0}</span></div>`).join("")}
+      </div>
+    </div>
+    <div class="panel chart" style="margin-top:18px">
+      <h3>Branches</h3>
+      <p class="sub">Fictional branches in North Rhine-Westphalia</p>
+      <div class="tbl-scroll"><table class="data"><thead><tr><th>Branch</th><th class="r">Feedback</th><th class="r">Open</th><th>Most frequent issue</th></tr></thead>
+      <tbody>${branchRows.map(r=>`<tr><td>${esc(r.b)}</td><td class="r">${r.n}</td><td class="r">${r.o}</td><td>${esc(r.top)}</td></tr>`).join("")}</tbody></table></div>
+    </div>`;
+}
+
+/* ---------- insights ---------- */
+function renderInsights(){
+  const cs = state.cases.filter(c=>labelFor(c)!=="praise");
+  const recent = c => weekIndex(c.date)>=4;
+  const items = Object.keys(CATS).filter(k=>k!=="praise").map(k=>{
+    const all = cs.filter(c=>labelFor(c)===k);
+    const now = all.filter(recent).length, before = all.length-now;
+    const byBranch = {}; all.forEach(c=>byBranch[c.branch]=(byBranch[c.branch]||0)+1);
+    const topB = Object.keys(byBranch).sort((p,q)=>byBranch[q]-byBranch[p])[0];
+    const share = topB ? byBranch[topB]/all.length : 0;
+    return {k, all, now, before, change: before ? (now-before)/before : (now?1:0), topB, share};
+  }).sort((p,q)=>q.change-p.change);
+  const proc = k => KB.find(p=>p.id===CATS[k].proc);
+  const fix = {
+    appointment:"Review appointment slot planning and add an automatic rescheduling confirmation by SMS or e-mail.",
+    reachability:"Check call routing and staffing at peak hours; track unanswered e-mails per branch.",
+    repair:"Offer loaner devices by default when a repair is expected to take more than 5 days.",
+    billing:"Explain insurance contribution and co-payment in writing at the fitting appointment.",
+    fitting:"Schedule a proactive fine-tuning check two weeks after every new fitting."
+  };
+  document.getElementById("v-insights").innerHTML = `
+    <div class="panel" style="padding:18px 20px;margin-bottom:16px">
+      <h2 class="plain-h">How these are computed</h2>
+      <p style="margin:0;color:var(--muted);max-width:85ch">Each insight compares the last 4 weeks with the 4 weeks before, using only the ${state.cases.length} synthetic records in this demo. Open the supporting cases to check every number. Suggested corrective actions are proposals for a manager to evaluate.</p>
+    </div>
+    <div class="ins-list">${items.map(it=>{
+      const pct = Math.round(it.change*100);
+      const cls = pct>15?"up":pct<-15?"down":"flat";
+      const lead = pct>15 ? `${CATS[it.k].label} increased` : pct<-15 ? `${CATS[it.k].label} decreased` : `${CATS[it.k].label} is stable`;
+      return `<article class="panel ins">
+        <div class="ins-top"><h3>${esc(lead)}</h3><span class="delta ${cls}">${it.before} → ${it.now} · ${pct>0?"+":""}${pct}%</span></div>
+        <p>${it.all.length} cases in 8 weeks.${it.share>=.4?` <b style="color:var(--ink)">${Math.round(it.share*100)}% come from ${esc(it.topB)}</b>, which points to a local cause.`:` Spread across branches; most from ${esc(it.topB||"—")}.`}</p>
+        <div class="fix"><b>Suggested corrective action:</b> ${esc(fix[it.k])} <span class="hint">Linked procedure: ${proc(it.k).id}.</span></div>
+        <details><summary>Supporting cases (${it.all.length})</summary><ul>${it.all.slice(0,12).map(c=>`<li><span class="mono">${c.id}</span> · ${fmtShort(c.date)} · ${esc(c.branch)} — <span lang="de">${esc(c.de.split("\n").find(l=>l.length>30)||c.de).slice(0,110)}</span></li>`).join("")}${it.all.length>12?`<li class="hint">and ${it.all.length-12} more</li>`:""}</ul></details>
+      </article>`;}).join("")}</div>`;
+}
+
+/* ---------- method & evaluation ---------- */
+function renderMethod(){
+  document.getElementById("v-method").innerHTML = `
+    <div class="panel arch">
+      <h2 class="plain-h">Target architecture</h2>
+      <p class="hint" style="margin:0 0 12px">This page simulates the AI service in the browser. The highlighted block is what the full version runs on the server.</p>
+      <svg viewBox="0 0 960 250" role="img" aria-label="Architecture diagram">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+        <rect x="10" y="85" width="140" height="70" rx="8"/><text class="lbl" x="80" y="115" text-anchor="middle">Next.js UI</text><text class="sm" x="80" y="134" text-anchor="middle">case desk · insights</text>
+        <rect x="190" y="85" width="140" height="70" rx="8"/><text class="lbl" x="260" y="115" text-anchor="middle">FastAPI</text><text class="sm" x="260" y="134" text-anchor="middle">typed API · auth · audit</text>
+        <rect class="hl" x="370" y="20" width="400" height="160" rx="10"/>
+        <text class="lbl" x="385" y="42">LangGraph workflow</text>
+        ${["mask_pii","classify","retrieve","draft","route"].map((n,i)=>`<rect x="${385+i*76}" y="60" width="68" height="40" rx="6"/><text class="sm" x="${419+i*76}" y="84" text-anchor="middle">${n}</text>`).join("")}
+        ${[0,1,2,3].map(i=>`<path d="M${453+i*76} 80 L${461+i*76} 80" marker-end="url(#ar)"/>`).join("")}
+        <rect class="gate" x="575" y="120" width="180" height="44" rx="6"/><text class="lbl" x="665" y="140" text-anchor="middle" style="font-size:12px">interrupt: human review</text><text class="sm" x="665" y="156" text-anchor="middle">approve · edit · escalate</text>
+        <path d="M719 100 L719 118" marker-end="url(#ar)"/>
+        <rect x="385" y="120" width="170" height="44" rx="6"/><text class="lbl" x="470" y="140" text-anchor="middle" style="font-size:12px">LLM + Pydantic schema</text><text class="sm" x="470" y="156" text-anchor="middle">configurable provider</text>
+        <rect x="810" y="20" width="140" height="60" rx="8"/><text class="lbl" x="880" y="46" text-anchor="middle">Vector store</text><text class="sm" x="880" y="64" text-anchor="middle">approved procedures</text>
+        <rect x="810" y="100" width="140" height="60" rx="8"/><text class="lbl" x="880" y="126" text-anchor="middle">PostgreSQL</text><text class="sm" x="880" y="144" text-anchor="middle">cases · audit log</text>
+        <rect x="810" y="180" width="140" height="60" rx="8"/><text class="lbl" x="880" y="206" text-anchor="middle">BI export</text><text class="sm" x="880" y="224" text-anchor="middle">existing dashboards</text>
+        <path d="M150 120 L188 120" marker-end="url(#ar)"/><path d="M330 120 L368 120" marker-end="url(#ar)"/>
+        <path d="M770 60 L808 52" marker-end="url(#ar)"/><path d="M770 130 L808 130" marker-end="url(#ar)"/><path d="M770 165 L808 205" marker-end="url(#ar)"/>
+      </svg>
+    </div>
+    <div class="cols3">
+      <div class="panel"><h3>What runs on this page</h3><ul>
+        <li><b>Masking:</b> regex rules for e-mail, phone, customer IDs and names.</li>
+        <li><b>Classification:</b> German keyword scoring with confidence, sentiment and urgency rules.</li>
+        <li><b>Retrieval:</b> term-overlap ranking over ${KB.length} fictional procedures.</li>
+        <li><b>Workflow:</b> real state transitions and an approval gate; every step writes to the audit trail.</li></ul></div>
+      <div class="panel"><h3>What the full version adds</h3><ul>
+        <li><b>LLM classification</b> with Pydantic-validated structured output and a rule-based fallback.</li>
+        <li><b>Embedding search</b> over approved procedure documents, with citations.</li>
+        <li><b>LangGraph interrupt</b> for human review, persisted with a checkpointer.</li>
+        <li><b>Role-based access</b>, structured logs and Docker deployment.</li></ul></div>
+      <div class="panel"><h3>Safety by design</h3><ul>
+        <li>Personal data is masked before any model call.</li>
+        <li>The AI drafts only. Contact, refunds and data changes need an approved request, enforced by the backend.</li>
+        <li>Human overrides and edits are logged and measured.</li>
+        <li>Synthetic data only. No connection to any real system.</li></ul></div>
+    </div>
+    <div class="panel eval" id="eval">
+      <div class="eval-head">
+        <div><h3>Evaluation harness</h3><p class="hint" style="margin:4px 0 0;max-width:80ch">Scores the engine live on two labelled sets: the ${state.cases.length} demo records (in-sample, since the keyword rules were written with them in view) and 12 held-out messages in different wording. The same harness would score an LLM classifier.</p></div>
+        <button class="btn primary" type="button" data-act="eval">Run evaluation</button>
+      </div>
+      <div id="eval-out"><p class="empty">Not run yet.</p></div>
+    </div>`;
+}
+// Written in different wording from the rules and kept out of rule design: shows where keyword matching breaks down
+const HOLDOUT = [
+  {gold:"reachability", de:"Seit Wochen versuche ich vergeblich, jemanden in der Filiale an den Apparat zu bekommen."},
+  {gold:"repair", de:"Das linke Hörgerät gibt keinen Ton mehr von sich."},
+  {gold:"billing", de:"Warum soll ich 380 Euro selbst zahlen? Das wurde mir vorher nicht gesagt."},
+  {gold:"appointment", de:"Ich wurde nach 30 Minuten im Wartebereich immer noch nicht aufgerufen."},
+  {gold:"praise", de:"Die Beratung durch Herrn Klein war erstklassig."},
+  {gold:"appointment", de:"Mein Termin zur Reparatur wurde dreimal verschoben."},
+  {gold:"billing", de:"Ich verstehe die Rechnung nicht."},
+  {gold:"repair", de:"Telefonisch erreiche ich niemanden, mein Gerät ist seit zwei Wochen defekt."},
+  {gold:"fitting", de:"Die Hörgeräte sind im Alltag zu leise eingestellt."},
+  {gold:"praise", de:"Danke für die schnelle Hilfe bei der Reparatur!"},
+  {gold:"billing", de:"Der Kostenvoranschlag wurde nie an die Krankenkasse geschickt."},
+  {gold:"appointment", de:"Niemand hat mich über die Terminänderung informiert."}
+];
+function scoreSet(data){
+  const keys = Object.keys(CATS);
+  let correct=0, routed=0, cited=0;
+  const cm = {}; keys.forEach(g=>{cm[g]={}; keys.concat("none").forEach(p=>cm[g][p]=0)});
+  data.forEach(c=>{
+    const red = redact(c.de, c.cust), pred = classify(red.text).primary || "none";
+    cm[c.gold][pred]++;
+    if(pred===c.gold) correct++;
+    if((pred==="none"?"cx":CATS[pred].dept)===CATS[c.gold].dept) routed++;
+    const docs = retrieve(red.text); if(docs[0] && docs[0].p.id===CATS[c.gold].proc) cited++;
+  });
+  const f1s = keys.map(k=>{
+    const tp = cm[k][k], fp = keys.reduce((s,g)=>s+(g!==k?cm[g][k]:0),0), fn = Object.entries(cm[k]).reduce((s,[p,v])=>s+(p!==k?v:0),0);
+    const prec = tp+fp ? tp/(tp+fp) : 0, rec = tp+fn ? tp/(tp+fn) : 0;
+    return prec+rec ? 2*prec*rec/(prec+rec) : 0;
+  });
+  const n = data.length;
+  return {n, correct, acc:correct/n, macro:f1s.reduce((a,b)=>a+b,0)/f1s.length, routed:routed/n, cited:cited/n, cm};
+}
+function runEval(){
+  const keys = Object.keys(CATS);
+  // manually entered cases have no gold label, so they stay out of the evaluation
+  const ins = scoreSet(state.cases.filter(c=>c.gold)), out = scoreSet(HOLDOUT);
+  let overrides=0, reviewed=0;
+  state.cases.forEach(c=>{ if(c.analysis && (c.status==="resolved"||c.status==="escalated")){ reviewed++; if(c.analysis.override||c.analysis.edited) overrides++; } });
+  const pct = v => (v*100).toFixed(1)+"%";
+  const short = {appointment:"Appt",reachability:"Reach",repair:"Repair",billing:"Billing",fitting:"Fitting",praise:"Praise",none:"None"};
+  document.getElementById("eval-out").innerHTML = `
+    <div class="tbl-scroll"><table class="data" style="max-width:720px">
+      <thead><tr><th>Metric</th><th class="r">In-sample (${ins.n})</th><th class="r">Held-out (${out.n})</th></tr></thead>
+      <tbody>
+        <tr><td>Classification accuracy</td><td class="r">${pct(ins.acc)}</td><td class="r"><b>${pct(out.acc)}</b></td></tr>
+        <tr><td>Macro-F1 (${keys.length} classes)</td><td class="r">${ins.macro.toFixed(3)}</td><td class="r"><b>${out.macro.toFixed(3)}</b></td></tr>
+        <tr><td>Department routing accuracy</td><td class="r">${pct(ins.routed)}</td><td class="r"><b>${pct(out.routed)}</b></td></tr>
+        <tr><td>Correct procedure cited (top-1)</td><td class="r">${pct(ins.cited)}</td><td class="r"><b>${pct(out.cited)}</b></td></tr>
+        <tr><td>Human override or edit rate</td><td class="r" colspan="2">${reviewed?Math.round(overrides/reviewed*100)+"% of "+reviewed+" reviewed case(s) this session":"no cases reviewed yet"}</td></tr>
+      </tbody></table></div>
+    <p class="why" style="margin:0"><b>Reading the gap:</b> the keyword engine is near perfect on the wording it was written for and drops sharply on new phrasing such as “an den Apparat bekommen” or “keinen Ton mehr”. Closing that gap is the job of the LLM classifier in the full version, measured with this same harness.</p>
+    <div class="eyebrow">Held-out confusion matrix</div>
+    <div class="tbl-scroll"><table class="cm"><thead><tr><th>gold ↓ / predicted →</th>${keys.concat("none").map(k=>`<th>${short[k]}</th>`).join("")}</tr></thead>
+    <tbody>${keys.map(g=>`<tr><th>${short[g]}</th>${keys.concat("none").map(p=>{const v=out.cm[g][p]; return `<td class="${p===g?"diag":v?"err":""}">${v}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+
+/* ---------- shell ---------- */
+function renderAll(){
+  renderGuide(); renderInbox(); renderCase();
+  const tab = currentTab();
+  if(tab==="overview") renderOverview();
+  if(tab==="insights") renderInsights();
+}
+function currentTab(){ const h = location.hash.replace("#",""); return ["desk","overview","insights","method"].includes(h) ? h : "desk"; }
+function showTab(){
+  const tab = currentTab();
+  document.querySelectorAll(".view").forEach(v=>v.hidden = v.id!=="v-"+tab);
+  document.querySelectorAll("nav.tabs a").forEach(a=>a.setAttribute("aria-current", a.dataset.tab===tab ? "page" : "false"));
+  if(tab==="overview") renderOverview();
+  if(tab==="insights") renderInsights();
+  if(tab==="method" && !document.getElementById("eval")) renderMethod();
+}
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-case],[data-lang],[data-act],[data-filter],[data-step],#new-case-btn,nav.tabs a");
+  if(!t) return;
+  if(t.dataset.step!==undefined){ goStep(byId(state.sel), +t.dataset.step); document.getElementById("wk-title")?.scrollIntoView({behavior:"smooth", block:"nearest"}); return; }
+  if(t.dataset.filter){ state.filter = t.dataset.filter; renderInbox(); return; }
+  if(t.dataset.act==="next-case"){ document.getElementById("toast").hidden = true; if(currentTab()!=="desk"){ location.hash="desk"; showTab(); } openNext(); document.getElementById("case").scrollIntoView({behavior:"smooth", block:"start"}); return; }
+  if(t.dataset.act==="auto-off" || t.dataset.act==="auto-on"){ state.auto = t.dataset.act==="auto-on"; renderCase(); say(state.auto?"Auto-play on":"Auto-play paused"); return; }
+  if(t.dataset.act==="guided"){
+    // only opens the case; the visitor presses Run AI analysis themselves
+    state.sel = GUIDED; state.lang = "de"; renderAll();
+    document.getElementById("case").scrollIntoView({behavior:"smooth", block:"start"});
+    document.querySelector('#case [data-act="run"]')?.focus({preventScroll:true});
+    return;
+  }
+  
+  if(t.matches("nav.tabs a")){ e.preventDefault(); location.hash = t.dataset.tab; showTab(); return; }
+  if(t.id==="new-case-btn"){ state.sel="__new"; renderAll(); return; }
+  if(t.dataset.case){ state.sel=t.dataset.case; state.lang="de"; renderAll(); if(matchMedia("(max-width:860px)").matches) document.getElementById("case").scrollIntoView({behavior:"smooth"}); return; }
+  if(t.dataset.lang){ state.lang=t.dataset.lang; renderCase(); return; }
+  const act = t.dataset.act, c = byId(state.sel);
+  if(act==="run" && c) runAnalysis(c);
+  if(["approve","escalate","reject"].includes(act) && c) decide(c, act);
+  if(act==="eval") runEval();
+  if(act==="cancel-new"){ state.sel = GUIDED; renderAll(); }
+  if(act==="create"){
+    const text = document.getElementById("nc-text").value.trim();
+    if(text.length<20){ document.getElementById("nc-err").textContent = "Enter at least 20 characters so the engine has something to analyse."; return; }
+    const ids = state.cases.filter(x=>!x.historical).map(x=>+x.id.slice(2));
+    const nc = {id:"C-"+(Math.max(...ids)+1), date:new Date(TODAY), branch:document.getElementById("nc-branch").value, channel:document.getElementById("nc-channel").value,
+      cust:"", gold:null, de:text, en:null, status:"new", historical:false, audit:[]};
+    log(nc,"system","Case received", nc.channel+" · "+nc.branch+" · entered manually");
+    state.cases.unshift(nc); state.sel = nc.id;
+    runAnalysis(nc);
+  }
+});
+addEventListener("hashchange", showTab);
+document.addEventListener("toggle", e=>{ if(!(e.target.matches && e.target.matches("details.tech"))) return; state.techOpen = e.target.open; if(e.target.open && state.auto){ state.auto = false; renderCase(); } }, true);
+
+function setTheme(dark){
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  const b = document.getElementById("theme-btn");
+  b.setAttribute("aria-pressed", String(dark));
+  b.setAttribute("aria-label", dark ? "Light theme" : "Dark theme");
+  try{ localStorage.setItem("cx-theme", dark ? "dark" : "light"); }catch(_){}
+}
+document.getElementById("theme-btn").addEventListener("click", ()=>setTheme(document.documentElement.getAttribute("data-theme")!=="dark"));
+let savedTheme = null; try{ savedTheme = localStorage.getItem("cx-theme"); }catch(_){}
+setTheme(savedTheme==="dark" || (!savedTheme && document.documentElement.getAttribute("data-theme")==="dark"));
+
+renderAll(); showTab();
+</script>
+
+</body>
+</html>
